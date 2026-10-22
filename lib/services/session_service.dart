@@ -17,10 +17,14 @@ import 'package:shared_preferences/shared_preferences.dart';
     await prefs.clearAll();
   }
 }*/
+
+/* 
+  Questões de Login
+*/
 class SessionService {
   static String nome = '';
   static String email = '';
-
+  //Future é para métodos asincronos, <String> significa que ele vai tentar trazer uma string 
   Future<String> pegarNome() async {
     final prefs = await SharedPreferences.getInstance();
     nome = prefs.getString('nome') ?? '';

@@ -2,8 +2,8 @@ class LugaresModel {
   final int id;
   final String nome;
   final String? categoria;
-  final double latitude;
-  final double longitude;
+  final num latitude;
+  final num longitude;
   final String? descricao;
   final int categoriaId;
 

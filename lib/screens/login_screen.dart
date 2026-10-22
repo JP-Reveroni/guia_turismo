@@ -10,9 +10,10 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  //Dados da API
-  //email: lilia@teste.com  | Senha: senha123
-  
+  /*
+    Dados para entrar no sistema
+    email: lilia@teste.com  | Senha: senha123 (Do proprio API)
+  */
   final _email = TextEditingController();
   final _senha = TextEditingController();
 
@@ -20,6 +21,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text("Login")),
+      //Consumer vai ler/ouvir o controller de Autenticação
       body: Consumer<AuthController>(
         builder: (context, controleAuth, _) => Padding(
           padding: EdgeInsets.all(16),
@@ -37,11 +39,16 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               SizedBox(height: 16),
               //Fica vazio se não tiver erro
-              Text(controleAuth.erro), 
+              Text(controleAuth.erro),
               ElevatedButton(
                 onPressed: () async {
-                  final logou = await controleAuth.autenticarUsuario(_email.text, _senha.text);
+                  //Tentar logar
+                  final logou = await controleAuth.autenticarUsuario(
+                    _email.text,
+                    _senha.text,
+                  );
                   if (logou && context.mounted) {
+                    //pushNamed -> cria uma "setinha" que te permite voltar a tela anterior
                     Navigator.pushNamed(context, 'home');
                   }
                 },

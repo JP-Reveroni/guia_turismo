@@ -3,11 +3,12 @@ import 'package:guia_turismo/controller/auth_controller.dart';
 import 'package:guia_turismo/controller/camera_controller.dart';
 import 'package:guia_turismo/controller/lugares_controller.dart';
 import 'package:guia_turismo/controller/theme_controller.dart';
-//import 'package:guia_turismo/inicializar.dart';
-import 'package:guia_turismo/screens/cadastro_lugar.dart';
+//import 'package:guia_turismo/inicializar.dart'; No fim, nem vai ser usado no projeto
+import 'package:guia_turismo/screens/camera_screen.dart';
 import 'package:guia_turismo/screens/home_screen.dart';
 import 'package:guia_turismo/screens/login_screen.dart';
-import 'package:guia_turismo/screens/lugares_screen.dart';
+import 'package:guia_turismo/screens/cadastro_lugar.dart';
+//import 'package:guia_turismo/screens/lugares_screen.dart'; Não vai ser usado devido o cadastro_lugar fazer o que ele faz, mas não vou deletar o codigo kkk
 import 'package:provider/provider.dart';
 
 void main() {
@@ -41,7 +42,7 @@ class _inicializarState extends State<inicializar> {
           'login': (context) => LoginScreen(),
           'home': (context) => HomeScreen(),
           'lugares': (context) => LugaresScreen(),
-          'cadastro': (context) => CadastroLugar()
+          'camera': (context) => CameraScreen()
         },
       ),
     ),
