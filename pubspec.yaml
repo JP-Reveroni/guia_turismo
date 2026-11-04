@@ -38,6 +38,10 @@ dependencies:
   provider: ^6.1.5+1
   shared_preferences: ^2.5.6
   image_picker: ^1.2.4
+  # --- Pacotes adicionados para o mapa ---
+  geolocator: ^14.1.2   # pega a localização (GPS) do usuário
+  flutter_map: ^8.3.2   # widget de mapa (tiles do OpenStreetMap)
+  latlong2: ^0.10.1     # classe LatLng (latitude + longitude)
 
 dev_dependencies:
   flutter_test:

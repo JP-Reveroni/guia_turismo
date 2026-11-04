@@ -1,5 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.CAMERA" />
+    <!-- Internet: necessária para a API, os tiles do mapa e o Nominatim (em release) -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Localização: necessária para o geolocator pegar o GPS -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <application
         android:label="guia_turismo"
         android:name="${applicationName}"

@@ -67,6 +67,8 @@
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Precisamos da sua localização para mostrar você no mapa.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Permites que eu use a camera?</string>
 	<key>NSMicrophoneUsageDescription</key>

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:guia_turismo/controller/geocoding_controller.dart';
 import 'package:guia_turismo/controller/lugares_controller.dart';
 import 'package:guia_turismo/models/lugares_model.dart';
 import 'package:provider/provider.dart';
@@ -16,7 +17,21 @@ class _LugaresScreenState extends State<LugaresScreen> {
   final _descricaoController = TextEditingController();
   final _latitudeController = TextEditingController();
   final _longitudeController = TextEditingController();
+  //Campo onde o usuário digita o endereço ou CEP para buscar a latitude/longitude
+  final _enderecoController = TextEditingController();
   int _categoriaId = 1;
+
+//Busca o endereço/CEP digitado na API Nominatim e preenche latitude e longitude
+Future<void> _buscarCoordenadas() async {
+  //read = pega o controller sem "escutar" (usado dentro de funções, não no build)
+  final geoController = context.read<GeocodingController>();
+  final resultado = await geoController.buscar(_enderecoController.text);
+  //Se encontrou, coloca os valores nos campos de latitude e longitude do formulário
+  if (resultado != null) {
+    _latitudeController.text = resultado.latitude.toString();
+    _longitudeController.text = resultado.longitude.toString();
+  }
+}
 
 void abrirForm() {
   //Sempre que abrir o forms, o campo está limpo
@@ -24,6 +39,9 @@ void abrirForm() {
   _descricaoController.clear();
   _latitudeController.clear();
   _longitudeController.clear();
+  _enderecoController.clear();
+  //Zera o resultado/erro da busca anterior
+  context.read<GeocodingController>().limpar();
   _categoriaId = 1;
   showDialog(context: context,
   builder: (context) {
@@ -62,6 +80,53 @@ void abrirForm() {
               ],
               //Salva o valor do dropdown
               onChanged: (valor) => _categoriaId = valor!,
+            ),
+            SizedBox(height: 20),
+            //Busca de endereço/CEP (Nominatim) -> preenche latitude e longitude
+            TextField(
+              controller: _enderecoController,
+              textInputAction: TextInputAction.search,
+              //Apertar "buscar" no teclado também faz a busca
+              onSubmitted: (_) => _buscarCoordenadas(),
+              decoration: InputDecoration(
+                label: Text("Endereço ou CEP"),
+                hintText: "Ex: Av. Paulista, São Paulo ou 01310-100",
+                //Consumer escuta o GeocodingController: troca a lupa por um loading durante a busca
+                suffixIcon: Consumer<GeocodingController>(
+                  builder: (context, geo, child) => geo.carregando
+                      ? Padding(
+                          padding: EdgeInsets.all(12),
+                          child: SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        )
+                      : IconButton(
+                          onPressed: _buscarCoordenadas,
+                          icon: Icon(Icons.search),
+                          tooltip: "Buscar coordenadas",
+                        ),
+                ),
+              ),
+            ),
+            //Mensagem abaixo do campo: erro (vermelho) ou o endereço que foi encontrado
+            Consumer<GeocodingController>(
+              builder: (context, geo, child) {
+                if (geo.erro.isNotEmpty) {
+                  return Padding(
+                    padding: EdgeInsets.only(top: 8),
+                    child: Text(geo.erro, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                  );
+                }
+                if (geo.resultado != null) {
+                  return Padding(
+                    padding: EdgeInsets.only(top: 8),
+                    child: Text("Encontrado: ${geo.resultado!.nomeCompleto}", style: TextStyle(fontSize: 12)),
+                  );
+                }
+                return SizedBox.shrink(); //Nada para mostrar
+              },
             ),
             SizedBox(height: 20),
             TextField(

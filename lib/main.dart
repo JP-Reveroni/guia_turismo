@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:guia_turismo/controller/auth_controller.dart';
 import 'package:guia_turismo/controller/camera_controller.dart';
+import 'package:guia_turismo/controller/geocoding_controller.dart';
+import 'package:guia_turismo/controller/gps_controller.dart';
 import 'package:guia_turismo/controller/lugares_controller.dart';
 import 'package:guia_turismo/controller/theme_controller.dart';
 //import 'package:guia_turismo/inicializar.dart'; No fim, nem vai ser usado no projeto
@@ -30,6 +32,10 @@ class _inicializarState extends State<inicializar> {
       ChangeNotifierProvider(create: (_) => AuthController()),
       ChangeNotifierProvider(create: (_) => ThemeController()),
       ChangeNotifierProvider(create: (_) => CameraController()),
+      //Controller do GPS: usado pela tela do mapa
+      ChangeNotifierProvider(create: (_) => GpsController()),
+      //Controller da busca de endereço/CEP (Nominatim): usado no cadastro de lugares
+      ChangeNotifierProvider(create: (_) => GeocodingController()),
     ],
     child: Consumer<ThemeController>(
       builder: (context, controllerThema, child) => MaterialApp(
@@ -48,4 +54,4 @@ class _inicializarState extends State<inicializar> {
     ),
     );
   }
-}
+}
