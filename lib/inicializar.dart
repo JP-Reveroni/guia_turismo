@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:guia_turismo/controller/theme_controller.dart';
+import 'package:guia_turismo/controllers/theme_controller.dart';
 import 'package:guia_turismo/screens/home_screen.dart';
 import 'package:provider/provider.dart';
 

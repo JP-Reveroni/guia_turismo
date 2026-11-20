@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "870820823594",
+    "project_id": "login-e31de",
+    "storage_bucket": "login-e31de.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:870820823594:android:33b5e819377344f878b953",
+        "android_client_info": {
+          "package_name": "com.example.login"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "870820823594-b93dt29ikfm98efvpc0vagcurlv6o2av.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDhGZrjyCrs94mYqVhzlqq6-AX_R21NZXY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "870820823594-b93dt29ikfm98efvpc0vagcurlv6o2av.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

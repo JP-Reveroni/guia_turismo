@@ -1,5 +1,7 @@
 plugins {
     id("com.android.application")
+    // Ativa o Google Services (Firebase + Login com Google) lendo android/app/google-services.json
+    id("com.google.gms.google-services")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
@@ -16,7 +18,10 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.guia_turismo"
+        // ATENÇÃO: o google-services.json do Firebase foi registrado com o pacote "com.example.login".
+        // Por isso o applicationId precisa ser igual a ele para o login com Google funcionar.
+        // (o "namespace" acima pode continuar diferente, ele só organiza o código Kotlin)
+        applicationId = "com.example.login"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

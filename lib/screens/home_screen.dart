@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:guia_turismo/controller/theme_controller.dart';
+import 'package:guia_turismo/controllers/auth_controller.dart';
+import 'package:guia_turismo/controllers/favoritos_controller.dart';
+import 'package:guia_turismo/controllers/theme_controller.dart';
 import 'package:guia_turismo/screens/camera_screen.dart';
 import 'package:guia_turismo/screens/cadastro_lugar.dart';
 import 'package:guia_turismo/screens/mapa_screen.dart';
+import 'package:guia_turismo/widgets/perfil_usuario.dart';
 import 'package:provider/provider.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -14,7 +17,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _paginaAtual = 0;
-  final List<Widget> _paginas = [Center(), CameraScreen(), LugaresScreen(), MapaScreen()];
+  final List<Widget> _paginas = [PerfilUsuario(), CameraScreen(), LugaresScreen(), MapaScreen()];
 
   final List<String> _cabecalho = [
     'Guia Turismo',
@@ -23,12 +26,30 @@ class _HomeScreenState extends State<HomeScreen> {
     'Mapa', //Título da nova aba do mapa
   ];
   @override
+  void initState() {
+    super.initState();
+    // Assim que a Home abre (usuário já logado), carrega os FAVORITOS dele.
+    // addPostFrameCallback espera o primeiro desenho da tela terminar.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final idUsuario = context.read<AuthController>().idUsuario;
+      context.read<FavoritosController>().carregar(idUsuario);
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         //Pega o titulo pelo indice
         title: Text(_cabecalho[_paginaAtual]),
         actions: [
+          //LOGOUT: pergunta se quer sair e encerra a sessão (Google + API)
+          IconButton(
+            tooltip: 'Sair',
+            icon: Icon(Icons.logout),
+            onPressed: () => confirmarLogout(context),
+          ),
           //Quando o botão é pressionado ele vai trocar de tema
           Consumer<ThemeController>(
             builder: (context, controllerThema, child) => IconButton(
@@ -60,4 +81,4 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-}
+}

@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:guia_turismo/controller/geocoding_controller.dart';
-import 'package:guia_turismo/controller/lugares_controller.dart';
+import 'package:guia_turismo/controllers/favoritos_controller.dart';
+import 'package:guia_turismo/controllers/geocoding_controller.dart';
+import 'package:guia_turismo/controllers/gps_controller.dart';
+import 'package:guia_turismo/controllers/lugares_controller.dart';
 import 'package:guia_turismo/models/lugares_model.dart';
+import 'package:guia_turismo/widgets/botao_favorito.dart';
+import 'package:guia_turismo/widgets/detalhes_lugar.dart';
+import 'package:guia_turismo/widgets/filtro_categorias.dart';
+import 'package:guia_turismo/widgets/foto_lugar.dart';
 import 'package:provider/provider.dart';
 
 class LugaresScreen extends StatefulWidget {
@@ -19,7 +25,32 @@ class _LugaresScreenState extends State<LugaresScreen> {
   final _longitudeController = TextEditingController();
   //Campo onde o usuário digita o endereço ou CEP para buscar a latitude/longitude
   final _enderecoController = TextEditingController();
+  //Campo opcional: link (URL) da foto do lugar
+  final _fotoController = TextEditingController();
   int _categoriaId = 1;
+
+  @override
+  void initState() {
+    super.initState();
+    //Ao abrir a lista, pede o GPS (se ainda não tiver) para mostrar a DISTÂNCIA de cada lugar
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final gps = context.read<GpsController>();
+      if (gps.atual == null) gps.buscarLocal();
+    });
+  }
+
+  @override
+  void dispose() {
+    //Libera os campos de texto da memória
+    _nomeController.dispose();
+    _descricaoController.dispose();
+    _latitudeController.dispose();
+    _longitudeController.dispose();
+    _enderecoController.dispose();
+    _fotoController.dispose();
+    super.dispose();
+  }
 
 //Busca o endereço/CEP digitado na API Nominatim e preenche latitude e longitude
 Future<void> _buscarCoordenadas() async {
@@ -40,6 +71,7 @@ void abrirForm() {
   _latitudeController.clear();
   _longitudeController.clear();
   _enderecoController.clear();
+  _fotoController.clear();
   //Zera o resultado/erro da busca anterior
   context.read<GeocodingController>().limpar();
   _categoriaId = 1;
@@ -130,6 +162,15 @@ void abrirForm() {
             ),
             SizedBox(height: 20),
             TextField(
+              controller: _fotoController,
+              keyboardType: TextInputType.url,
+              decoration: InputDecoration(
+                label: Text("URL da foto (opcional)"),
+                hintText: "https://...",
+              ),
+            ),
+            SizedBox(height: 20),
+            TextField(
               controller: _latitudeController,
               decoration: InputDecoration(
                 label: Text("Latitude")
@@ -162,12 +203,13 @@ Future<void> _salvarDados(BuildContext contextDialog) async {
     latitude: double.tryParse(_latitudeController.text.replaceAll(',', '.')) ?? 0,
     longitude: double.tryParse(_longitudeController.text.replaceAll(',', '.')) ?? 0,
     categoriaId: _categoriaId,
+    fotoUrl: _fotoController.text.trim(),
   );
   final controleLugares = context.read<LugaresController>();
   final mensagem = await controleLugares.cadastrarLugar(novoLugar);
   if (!contextDialog.mounted) return;
   ScaffoldMessenger.of(contextDialog).showSnackBar(SnackBar(content: Text(mensagem)));
-  if (controleLugares.erro.isEmpty) {
+  if (controleLugares.cadastroOk) {
     //Fecha o modal qnd conclui
     Navigator.pop(contextDialog); 
   }
@@ -186,27 +228,52 @@ Future<void> _salvarDados(BuildContext contextDialog) async {
         if (lugaresController.lugares.isEmpty){
           return Center(child: Text("Nenhum lugar encontrado"));
         }
-        //Monta a lista de lugares
-        return ListView.builder(
-          itemCount: lugaresController.lugares.length,
-          itemBuilder: (context, index) {
-            final lugar = lugaresController.lugares[index];
-            return Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadiusGeometry.circular(12)
-              ),
-              elevation: 4,
-              child: ListTile(
-                onTap: (){},
-                title: Text(lugar.nome),
-                subtitle: Text(lugar.categoria.toString()),
-                //Icone que fica no inicio da linha
-                leading: CircleAvatar(child: Icon(Icons.place)),
-                //Icone que fica no final da linha
-                trailing: IconButton(onPressed: (){}, icon: Icon(Icons.favorite)),
-              ),
-            );
-          },
+        //Monta a lista de lugares (já aplicando os filtros escolhidos)
+        //watch = redesenha a lista quando os favoritos ou o GPS mudam
+        final favoritos = context.watch<FavoritosController>();
+        final gps = context.watch<GpsController>();
+        final lugares = lugaresController.lugaresFiltrados(favoritos.ids);
+
+        return Column(
+          children: [
+            //Chips de filtro (categorias e favoritos)
+            FiltroCategorias(),
+            Expanded(
+              child: lugares.isEmpty
+                  ? Center(child: Text("Nenhum lugar com esses filtros"))
+                  : ListView.builder(
+                      itemCount: lugares.length,
+                      itemBuilder: (context, index) {
+                        final lugar = lugares[index];
+                        //Distância até o usuário (null se o GPS ainda não respondeu)
+                        final distancia = gps.distanciaAte(lugar);
+                        return Card(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadiusGeometry.circular(12)
+                          ),
+                          elevation: 4,
+                          child: ListTile(
+                            //Toque no item abre o painel de detalhes (foto, como chegar...)
+                            onTap: () => mostrarDetalhesLugar(context, lugar),
+                            title: Text(lugar.nome),
+                            subtitle: Text(
+                              [
+                                if ((lugar.categoria ?? '').isNotEmpty) lugar.categoria!,
+                                ?distancia,
+                              ].join(' • '),
+                            ),
+                            //Foto que fica no inicio da linha
+                            leading: ClipOval(
+                              child: FotoLugar(url: lugar.fotoUrl, tamanho: 40),
+                            ),
+                            //Coração de favorito que fica no final da linha
+                            trailing: BotaoFavorito(idLugar: lugar.id),
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ],
         );
       }),
 

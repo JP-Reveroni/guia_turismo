@@ -1,5 +1,5 @@
 // import 'package:flutter/material.dart';
-// import 'package:guia_turismo/controller/lugares_controller.dart';
+// import 'package:guia_turismo/controllers/lugares_controller.dart';
 // import 'package:guia_turismo/models/lugares_model.dart';
 // import 'package:provider/provider.dart';
 

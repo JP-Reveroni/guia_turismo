@@ -3,12 +3,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
-import 'package:guia_turismo/controller/gps_controller.dart';
-import 'package:guia_turismo/controller/lugares_controller.dart';
+import 'package:guia_turismo/controllers/favoritos_controller.dart';
+import 'package:guia_turismo/controllers/gps_controller.dart';
+import 'package:guia_turismo/controllers/lugares_controller.dart';
 import 'package:guia_turismo/models/lugares_model.dart';
+import 'package:guia_turismo/widgets/detalhes_lugar.dart';
+import 'package:guia_turismo/widgets/filtro_categorias.dart';
+import 'package:guia_turismo/widgets/pin_lugar.dart';
 
-/// Tela do mapa: mostra um PIN (marcador) para cada lugar cadastrado
+/// Tela do mapa: mostra um PIN (marcador com a FOTO) para cada lugar cadastrado
 /// e um ponto azul com a localização atual do usuário.
+/// Tem filtros por categoria/favoritos e, ao tocar num pin, abre os detalhes
+/// (com favorito, distância e botão "Como chegar").
 class MapaScreen extends StatefulWidget {
   const MapaScreen({super.key});
 
@@ -48,28 +54,37 @@ class _MapaScreenState extends State<MapaScreen> {
     if (!mounted) return;
 
     if (gps.atual != null) {
-      _mapController.move(gps.atual!, 15.0); // move(centro, zoom)
+      try {
+        _mapController.move(gps.atual!, 15.0); // move(centro, zoom)
+      } catch (e) {
+        // O mapa pode ainda não estar pronto: não deixa isso fechar o app
+        debugPrint('ERRO ao mover o mapa: $e');
+      }
     } else if (gps.erro.isNotEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(gps.erro)));
     }
   }
 
-  /// Ajusta a câmera para enquadrar TODOS os lugares cadastrados.
+  /// Ajusta a câmera para enquadrar TODOS os lugares que aparecem no mapa (respeitando os filtros).
   void _verTodosOsLugares(List<LugaresModel> lugares) {
     final pontos = _pontosValidos(lugares);
     if (pontos.isEmpty) return;
 
-    if (pontos.length == 1) {
-      // Com um só ponto não existe "área" para enquadrar, então só centraliza
-      _mapController.move(pontos.first, 15.0);
-    } else {
-      // CameraFit.coordinates calcula centro e zoom para caber todos os pontos
-      _mapController.fitCamera(
-        CameraFit.coordinates(
-          coordinates: pontos,
-          padding: const EdgeInsets.all(48), // margem para os pins não colarem na borda
-        ),
-      );
+    try {
+      if (pontos.length == 1) {
+        // Com um só ponto não existe "área" para enquadrar, então só centraliza
+        _mapController.move(pontos.first, 15.0);
+      } else {
+        // CameraFit.coordinates calcula centro e zoom para caber todos os pontos
+        _mapController.fitCamera(
+          CameraFit.coordinates(
+            coordinates: pontos,
+            padding: const EdgeInsets.all(48), // margem para os pins não colarem na borda
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('ERRO ao enquadrar os lugares: $e');
     }
   }
 
@@ -88,45 +103,17 @@ class _MapaScreenState extends State<MapaScreen> {
       .map((l) => LatLng(l.latitude.toDouble(), l.longitude.toDouble()))
       .toList();
 
-  /// Painel que sobe de baixo quando o usuário toca em um pin.
-  void _mostrarDetalhes(LugaresModel lugar) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min, // ocupa só o espaço necessário
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(lugar.nome, style: Theme.of(context).textTheme.titleLarge),
-              if ((lugar.categoria ?? '').isNotEmpty) ...[
-                const SizedBox(height: 4),
-                Chip(label: Text(lugar.categoria!)),
-              ],
-              if ((lugar.descricao ?? '').isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Text(lugar.descricao!),
-              ],
-              const SizedBox(height: 8),
-              Text(
-                'Lat: ${lugar.latitude}  |  Long: ${lugar.longitude}',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    // Consumer2 escuta DOIS controllers ao mesmo tempo:
-    // quando os lugares ou o GPS mudam, o mapa é redesenhado.
-    return Consumer2<LugaresController, GpsController>(
-      builder: (context, lugaresController, gps, child) {
-        final lugares = lugaresController.lugares.where(_temCoordenada).toList();
+    // Consumer3 escuta TRÊS controllers ao mesmo tempo:
+    // quando os lugares, o GPS ou os favoritos mudam, o mapa é redesenhado.
+    return Consumer3<LugaresController, GpsController, FavoritosController>(
+      builder: (context, lugaresController, gps, favoritos, child) {
+        // Aplica os FILTROS (categoria / favoritos) e ignora lugares sem coordenada
+        final lugares = lugaresController
+            .lugaresFiltrados(favoritos.ids)
+            .where(_temCoordenada)
+            .toList();
 
         return Scaffold(
           body: Stack(
@@ -156,7 +143,7 @@ class _MapaScreenState extends State<MapaScreen> {
                     userAgentPackageName: "br.com.guiaturismo.maps",
                   ),
 
-                  // CAMADA 2: os pins dos lugares cadastrados
+                  // CAMADA 2: os pins dos lugares cadastrados (cada um com a FOTO do lugar)
                   MarkerLayer(
                     markers: lugares
                         .map(
@@ -164,21 +151,17 @@ class _MapaScreenState extends State<MapaScreen> {
                             // A ponta do pin deve ficar em cima da coordenada:
                             // topCenter faz o pin ser desenhado ACIMA do ponto
                             alignment: Alignment.topCenter,
-                            width: 40,
-                            height: 40,
+                            width: 48,
+                            height: 64, // mesmo tamanho do PinLugar (widgets/pin_lugar.dart)
                             rotate: true, // o pin não gira se o mapa for rotacionado
                             point: LatLng(
                               lugar.latitude.toDouble(),
                               lugar.longitude.toDouble(),
                             ),
-                            // GestureDetector deixa o ícone "clicável"
-                            child: GestureDetector(
-                              onTap: () => _mostrarDetalhes(lugar),
-                              child: const Icon(
-                                Icons.location_on,
-                                color: Colors.red,
-                                size: 40,
-                              ),
+                            child: PinLugar(
+                              lugar: lugar,
+                              favorito: favoritos.ehFavorito(lugar.id),
+                              onTap: () => mostrarDetalhesLugar(context, lugar),
                             ),
                           ),
                         )
@@ -219,10 +202,21 @@ class _MapaScreenState extends State<MapaScreen> {
                   child: LinearProgressIndicator(),
                 ),
 
+              // Barra de FILTROS por categoria, fixa no topo do mapa
+              Positioned(
+                top: 4,
+                left: 0,
+                right: 0,
+                child: Material(
+                  color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.9),
+                  child: const FiltroCategorias(),
+                ),
+              ),
+
               // Aviso se a lista de lugares não carregou
               if (lugaresController.erro.isNotEmpty)
                 Positioned(
-                  top: 8,
+                  top: 60,
                   left: 8,
                   right: 8,
                   child: Card(
@@ -242,7 +236,7 @@ class _MapaScreenState extends State<MapaScreen> {
               FloatingActionButton.small(
                 heroTag: 'verTodos', // heroTag precisa ser único quando há 2 botões
                 tooltip: 'Ver todos os lugares',
-                onPressed: () => _verTodosOsLugares(lugaresController.lugares),
+                onPressed: () => _verTodosOsLugares(lugares),
                 child: const Icon(Icons.zoom_out_map),
               ),
               const SizedBox(height: 12),

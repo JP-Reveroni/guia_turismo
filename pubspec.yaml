@@ -42,6 +42,12 @@ dependencies:
   geolocator: ^14.1.2   # pega a localização (GPS) do usuário
   flutter_map: ^8.3.2   # widget de mapa (tiles do OpenStreetMap)
   latlong2: ^0.10.1     # classe LatLng (latitude + longitude)
+  # --- Pacotes adicionados para o login com Google ---
+  firebase_core: ^5.1.0    # inicializa o Firebase no app
+  firebase_auth: ^7.0.1    # autenticação do Firebase (guarda a sessão do usuário)
+  google_sign_in: ^7.2.0   # abre a janela de escolha da conta Google
+  # --- Funcionalidade extra: "Como chegar" ---
+  url_launcher: ^6.3.1     # abre o Google Maps / Waze fora do app
 
 dev_dependencies:
   flutter_test:
